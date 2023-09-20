@@ -1,10 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 function AssignmentModal({ classData, onClose }) {
+  const [modalHeight, setModalHeight] = useState("md:max-h-screen-md");
+  const [topPadding, setTopPadding] = useState("");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setModalHeight(""); // Clear the maxHeight for smaller screens
+        setTopPadding("pt-16"); // Add extra padding to the top for mobile screens
+      } else {
+        setModalHeight("md:max-h-screen-md"); // Set the maxHeight for larger screens
+        setTopPadding(""); // Clear the top padding for larger screens
+      }
+    };
+
+    // Add a resize event listener
+    window.addEventListener("resize", handleResize);
+
+    handleResize();
+
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black opacity-75"></div>
-      <div className="z-50 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-screen-lg w-full h-screen md:max-h-screen-md overflow-y-auto">
+      <div
+        className={`z-50 bg-white dark:bg-gray-800 p-8 ${topPadding} rounded-lg shadow-lg max-w-screen-lg w-full h-screen ${modalHeight} overflow-y-auto`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-3xl font-semibold text-indigo-500">
             {classData.name}
