@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { InfinitySpin } from "react-loader-spinner";
+import AssignmentModal from "./AssignmentModal"; // Make sure to import your AssignmentModal component
 
 function Dashboard() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(null);
 
   // Function to fetch data from the API
   const fetchData = async () => {
@@ -27,6 +29,7 @@ function Dashboard() {
             ? `${classInfo.grade.replace("Overall Average ", "")}%`
             : "N/A",
         last_updated: classInfo["Last Updated"] || "N/A",
+        assignments: classInfo.assignments, // Add assignments data
       }));
 
       setData(formattedData);
@@ -40,6 +43,16 @@ function Dashboard() {
   useEffect(() => {
     fetchData(); // Call the fetchData function
   }, []);
+
+  // Function to open the modal when a class is clicked
+  const openModal = (classData) => {
+    setSelectedClass(classData);
+  };
+
+  // Function to close the modal
+  const closeModal = () => {
+    setSelectedClass(null);
+  };
 
   const handleSignout = () => {
     localStorage.clear();
@@ -60,23 +73,27 @@ function Dashboard() {
       ) : (
         <div className="container md:mx-auto grid sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 content-around">
           {data.map((classInfo, index) => (
-            <a
+            <div
               key={index}
-              href="#"
-              className="block md:p-14 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 text-center p-4 sm:col-span-1"
+              className="cursor-pointer"
+              onClick={() => openModal(classInfo)} // Open modal on click
             >
-              <h4 className="mb-2 sm:text-sm md:text-xl lg:text-xl font-bold tracking-tight text-gray-900 dark:text-indigo-500">
-                {classInfo.name}
-              </h4>
-              {classInfo.grade !== "N/A" && (
-                <p className="font-semibold sm:text-xs md:text-xl md:mt-2 lg:mt-2 text-gray-700 dark:text-gray-400">
+              <div className="block md:p-14 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 text-center p-4 sm:col-span-1">
+                <h4 className="mb-2 sm:text-sm md:text-xl lg:text-xl font-bold tracking-tight text-gray-900 dark:text-indigo-500">
+                  {classInfo.name}
+                </h4>
+                <p
+                  className={`font-semibold sm:text-xs md:text-xl md:mt-2 lg:mt-2 ${getColorClass(
+                    classInfo.grade
+                  )} dark:text-gray-400`}
+                >
                   {classInfo.grade}
                 </p>
-              )}
-              <p className="font-normal sm:text-base mt-2 text-gray-700 dark:text-gray-400">
-                Last Updated: {classInfo.last_updated}
-              </p>
-            </a>
+                <p className="font-normal sm:text-base mt-2 text-gray-700 dark:text-gray-400">
+                  Last Updated: {classInfo.last_updated}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -86,8 +103,33 @@ function Dashboard() {
       >
         Sign Out
       </button>
+      {selectedClass && (
+        <AssignmentModal classData={selectedClass} onClose={closeModal} />
+      )}
     </div>
   );
+}
+
+// Function to determine the color class based on the grade
+function getColorClass(grade) {
+  // Use regular expression to extract the numeric part of the grade
+  const numericGradeMatch = grade.match(/(\d+(\.\d+)?)/);
+
+  if (numericGradeMatch) {
+    const numericGrade = parseFloat(numericGradeMatch[0]);
+
+    if (numericGrade < 50) {
+      return "dark:text-red-400"; // Red for grades below 50%
+    } else if (numericGrade < 70) {
+      return "dark:text-orange-300"; // Orange for grades between 50% and 69%
+    } else if (numericGrade < 90) {
+      return "dark:text-yellow-300"; // Yellow for grades between 70% and 89%
+    } else {
+      return "dark:text-green-400"; // Green for grades between 90% and 100%
+    }
+  } else {
+    return "dark:text-gray-300"; // Default color for N/A grades or invalid grades
+  }
 }
 
 export default Dashboard;
