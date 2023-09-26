@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { InfinitySpin } from "react-loader-spinner";
+import Modal from "./Modal"; // Import Modal component
 import AssignmentModal from "./AssignmentModal"; // Make sure to import your AssignmentModal component
 
 function Dashboard() {
@@ -7,6 +8,8 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [isGPAModalOpen, setIsGPAModalOpen] = useState(false);
+  const [gpa, setGPA] = useState(null);
 
   // Function to fetch data from the API
   const fetchData = async () => {
@@ -29,7 +32,14 @@ function Dashboard() {
             ? `${classInfo.grade.replace("Overall Average ", "")}%`
             : "N/A",
         last_updated: classInfo["Last Updated"] || "N/A",
-        assignments: classInfo.assignments, // Add assignments data
+        assignments: classInfo.assignments,
+        category: classInfo.name.endsWith("AP")
+          ? "AP"
+          : classInfo.name.endsWith("CP") || classInfo.name.endsWith("GHP")
+          ? "CP"
+          : classInfo.name.endsWith("HRS")
+          ? "HRS"
+          : "Unknown",
       }));
 
       setData(formattedData);
@@ -41,7 +51,7 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData(); // Call the fetchData function
+    fetchData();
   }, []);
 
   // Function to open the modal when a class is clicked
@@ -57,6 +67,107 @@ function Dashboard() {
   const handleSignout = () => {
     localStorage.clear();
     window.location.href = "/"; // Redirect to the sign-in page
+  };
+
+  const std_weight = {
+    "A+": 4.0,
+    "A": 4.0,
+    "A-": 3.67,
+    "B+": 3.33,
+    "B": 3.0,
+    "B-": 2.67,
+    "C+": 2.33,
+    "C": 2.0,
+    "C-": 1.67,
+    "D": 1.0,
+    "F": 0.0,
+  };
+
+  const hnrs_weight = {
+    "A+": 4.5,
+    "A": 4.5,
+    "A-": 4.17,
+    "B+": 3.83,
+    "B": 3.5,
+    "B-": 3.17,
+    "C+": 2.83,
+    "C": 2.5,
+    "C-": 2.17,
+    "D": 1.0,
+    "F": 0.0,
+  };
+
+  const ap_weight = {
+    "A+": 5.0,
+    "A": 5.0,
+    "A-": 4.67,
+    "B+": 4.33,
+    "B": 4.0,
+    "B-": 3.67,
+    "C+": 3.33,
+    "C": 3.0,
+    "C-": 2.67,
+    "D": 1.0,
+    "F": 0.0,
+  };
+
+  const calculateGPA = () => {
+    let totalQualityPoints = 0;
+    let totalCredits = 0;
+
+    data.forEach((classInfo) => {
+      const { grade, category } = classInfo;
+      console.log(grade, category);
+      let credits = 1; // Automatically set credits to 1 for each course
+
+      // Convert percentage grade to letter grade
+      let letterGrade = "F"; // Default to F
+
+      if (grade !== "N/A") {
+        const numericGrade = parseFloat(grade);
+        if (numericGrade >= 97) letterGrade = "A+";
+        else if (numericGrade >= 93) letterGrade = "A";
+        else if (numericGrade >= 90) letterGrade = "A-";
+        else if (numericGrade >= 87) letterGrade = "B+";
+        else if (numericGrade >= 83) letterGrade = "B";
+        else if (numericGrade >= 80) letterGrade = "B-";
+        else if (numericGrade >= 77) letterGrade = "C+";
+        else if (numericGrade >= 73) letterGrade = "C";
+        else if (numericGrade >= 70) letterGrade = "C-";
+        else if (numericGrade >= 60) letterGrade = "D";
+      }
+
+      // Define the course category weightings
+      const categoryWeightings = {
+        CP: std_weight,
+        GHP: std_weight,
+        HRS: hnrs_weight,
+        AP: ap_weight,
+      };
+
+      // Add the corresponding quality points based on the grade and category
+      if (category in categoryWeightings) {
+        totalQualityPoints +=
+          categoryWeightings[category][letterGrade] * credits;
+      } else {
+        console.warn(
+          `Category '${category}' not recognized. Using default weightings.`
+        );
+        totalQualityPoints += std_weight[letterGrade] * credits; // Default to standard weightings
+      }
+
+      // Increment total credits
+      totalCredits += credits;
+    });
+
+    // Calculate GPA
+    const calculatedGPA = totalQualityPoints / totalCredits;
+
+    // Set the GPA in state
+    setGPA(calculatedGPA);
+
+    // Open the GPA modal
+    setIsGPAModalOpen(true);
   };
 
   return (
@@ -76,7 +187,7 @@ function Dashboard() {
             <div
               key={index}
               className="cursor-pointer"
-              onClick={() => openModal(classInfo)} // Open modal on click
+              onClick={() => openModal(classInfo)}
             >
               <div className="block md:p-14 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 text-center p-4 sm:col-span-1">
                 <h4 className="mb-2 sm:text-sm md:text-xl lg:text-xl font-bold tracking-tight text-gray-900 dark:text-indigo-500">
@@ -105,6 +216,27 @@ function Dashboard() {
       </button>
       {selectedClass && (
         <AssignmentModal classData={selectedClass} onClose={closeModal} />
+      )}
+
+      {/* Calculate GPA button */}
+      <button
+        className="fixed bottom-4 right-4 p-2 bg-indigo-500 text-white rounded-xl"
+        onClick={calculateGPA}
+      >
+        Calculate GPA
+      </button>
+
+      {/* GPA Modal */}
+      {isGPAModalOpen && (
+        <Modal title="GPA Calculation" onClose={() => setIsGPAModalOpen(false)}>
+          {gpa !== null ? (
+            <div>
+              <p>Your GPA for these courses is: {gpa.toFixed(2)}</p>
+            </div>
+          ) : (
+            <p>GPA calculation is in progress...</p>
+          )}
+        </Modal>
       )}
     </div>
   );
