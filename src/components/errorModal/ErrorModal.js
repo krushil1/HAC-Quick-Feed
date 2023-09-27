@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from 'react-modal';
 
-Modal.setAppElement('#root'); // Set the root element for accessibility
+Modal.setAppElement('#root'); 
 
 function ErrorModal({ isOpen, onClose, errorMessage }) {
   return (
