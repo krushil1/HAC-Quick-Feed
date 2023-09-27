@@ -36,13 +36,11 @@ function Login() {
       const response = await fetch(apiUrl);
 
       if (response.status === 200) {
-        const responseData = await response.json(); // Parse the response data
+        const responseData = await response.json(); 
         const token = responseData.token;
 
-        // Store the token in local storage
         localStorage.setItem("token", token);
 
-        // Navigate to the dashboard or another protected route
         localStorage.setItem("isLoggedIn", "true");
         navigate("/dashboard");
       } else {

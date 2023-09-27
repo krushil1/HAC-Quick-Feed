@@ -7,20 +7,18 @@ function AssignmentModal({ classData, onClose }) {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) {
-        setModalHeight(""); // Clear the maxHeight for smaller screens
-        setTopPadding("pt-16"); // Add extra padding to the top for mobile screens
+        setModalHeight(""); 
+        setTopPadding("pt-16"); 
       } else {
-        setModalHeight("md:max-h-screen-md"); // Set the maxHeight for larger screens
-        setTopPadding(""); // Clear the top padding for larger screens
+        setModalHeight("md:max-h-screen-md"); 
+        setTopPadding(""); 
       }
     };
 
-    // Add a resize event listener
     window.addEventListener("resize", handleResize);
 
     handleResize();
 
-    // Clean up the event listener
     return () => {
       window.removeEventListener("resize", handleResize);
     };
